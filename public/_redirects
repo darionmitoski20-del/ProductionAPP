@@ -1,0 +1,2 @@
+# SPA fallback: serve index.html for all routes so /admin and /kitchen work
+/*    /index.html   200

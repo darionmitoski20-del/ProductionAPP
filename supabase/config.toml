@@ -1,0 +1,14 @@
+project_id = "rdwgekekhymjzqrinxdp"
+
+# Admin Edge Functions: we verify JWT and ADMIN role inside the function with anon-key client.
+# Gateway-level JWT verification is disabled so the request reaches our code (avoids 401 before our logic runs).
+[functions.admin-list-users]
+verify_jwt = false
+[functions.admin-create-user]
+verify_jwt = false
+[functions.admin-set-password]
+verify_jwt = false
+[functions.admin-set-role]
+verify_jwt = false
+[functions.admin-update-user-profile]
+verify_jwt = false

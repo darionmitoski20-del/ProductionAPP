@@ -1,0 +1,13 @@
+{
+  "name": "quick-sync-kitchen-order-notify",
+  "private": true,
+  "type": "module",
+  "description": "Optional Node.js mailer using Nodemailer + Gmail (same env vars as Edge Function). Deploy behind a webhook or run locally for testing.",
+  "scripts": {
+    "start": "node httpNotify.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "nodemailer": "^6.9.16"
+  }
+}
