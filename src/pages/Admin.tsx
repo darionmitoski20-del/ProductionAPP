@@ -97,7 +97,7 @@ async function invokeEdge<T = any>(
 // ── Component ──────────────────────────────────────────────────
 const Admin = () => {
   const navigate = useNavigate();
-  const { user, loading, isAdmin, role, signOut } = useAuth();
+  const { user, loading, isAdmin, isDemo, role, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState('accepted');
   const { data: orders, isLoading } = useOrders();
 
@@ -185,6 +185,10 @@ const Admin = () => {
   };
 
   const handleSetPassword = async () => {
+    if (isDemo) {
+      toast.error('Demo account: you cannot set passwords.');
+      return;
+    }
     if (!pwdTarget) return;
     if (!newPassword || newPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
@@ -208,6 +212,10 @@ const Admin = () => {
   };
 
   const handleChangeRole = async (targetUser: UserProfile, newRole: 'ADMIN' | 'STAFF') => {
+    if (isDemo) {
+      toast.error('Demo account: you cannot change roles or set passwords.');
+      return;
+    }
     if (newRole === targetUser.role) return;
     const { error } = await invokeEdge('admin-set-role', {
       user_id: targetUser.id,
@@ -404,6 +412,11 @@ const Admin = () => {
                     <UserPlus className="h-5 w-5 text-primary" />
                     <h2 className="text-lg font-semibold">Create Staff User</h2>
                   </div>
+                  {isDemo && (
+                    <p className="text-sm text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 px-3 py-2 mb-4">
+                      Demo account: you can create users. Changing roles and setting passwords are disabled.
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground mb-4">
                     Create a new account. The user can sign in immediately with the email and
                     password you set here.
@@ -543,6 +556,7 @@ const Admin = () => {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => openPwdDialog(u)}
+                                    disabled={isDemo}
                                   >
                                     <KeyRound className="h-3.5 w-3.5 mr-1" />
                                     Password
@@ -552,6 +566,7 @@ const Admin = () => {
                                     onValueChange={(v) =>
                                       handleChangeRole(u, v as 'ADMIN' | 'STAFF')
                                     }
+                                    disabled={isDemo}
                                   >
                                     <SelectTrigger className="w-[110px] h-8 text-xs">
                                       <SelectValue />
@@ -604,7 +619,7 @@ const Admin = () => {
             <Button variant="outline" onClick={() => setPwdDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSetPassword} disabled={pwdSubmitting}>
+            <Button onClick={handleSetPassword} disabled={pwdSubmitting || isDemo}>
               {pwdSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (

@@ -10,6 +10,7 @@ export interface AuthContextValue {
   loading: boolean;
   isAdmin: boolean;
   isStaff: boolean;
+  isDemo: boolean;
   role: 'admin' | 'staff' | null;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<{ error: any }>;
@@ -26,6 +27,26 @@ function isAuthError(error: unknown): boolean {
   return false;
 }
 
+/** Always treated as demo (read-only / restricted), regardless of VITE_DEMO_EMAILS. */
+const BUILTIN_DEMO_EMAILS = new Set(['demo@brzinaracki.com']);
+
+function isDemoAccount(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalizedEmail = email.trim().toLowerCase();
+  if (BUILTIN_DEMO_EMAILS.has(normalizedEmail)) return true;
+
+  const configuredDemoEmails = String(import.meta.env.VITE_DEMO_EMAILS ?? '')
+    .split(',')
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (configuredDemoEmails.length > 0) {
+    return configuredDemoEmails.includes(normalizedEmail);
+  }
+
+  return normalizedEmail.startsWith('demo@') || normalizedEmail.includes('+demo@');
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -33,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [rolesReady, setRolesReady] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isStaff, setIsStaff] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
   const [role, setRole] = useState<'admin' | 'staff' | null>(null);
 
   const profileFetchInFlight = useRef(false);
@@ -50,9 +72,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!session?.user) {
           setIsAdmin(false);
           setIsStaff(false);
+          setIsDemo(false);
           setRole(null);
           setRolesReady(true);
         } else {
+          setIsDemo(isDemoAccount(session.user.email));
           setRolesReady(false);
         }
       }
@@ -64,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
+        setIsDemo(isDemoAccount(session?.user?.email));
         setAuthReady(true);
         if (!session?.user) setRolesReady(true);
       })
@@ -89,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) {
       setIsAdmin(false);
       setIsStaff(false);
+      setIsDemo(false);
       setRole(null);
       setRolesReady(true);
       return;
@@ -151,10 +177,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null);
           setIsAdmin(false);
           setIsStaff(false);
+          setIsDemo(false);
           setRole(null);
         }
         setIsAdmin(false);
         setIsStaff(false);
+        setIsDemo(false);
         setRole(null);
       } finally {
         profileFetchInFlight.current = false;
@@ -216,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         isAdmin,
         isStaff,
+        isDemo,
         role,
         signIn,
         signOut,

@@ -168,6 +168,9 @@ export default {
     timelineHintAccepted: 'Your order has been accepted by the kitchen!',
     timelineHintPreparing: 'Your order is being prepared!',
     timelineHintReady: 'Your order is ready for pickup!',
+    canceledTitle: 'Order Declined',
+    canceledBody: 'Unfortunately, your order could not be prepared. If you have questions, please contact us.',
+    canceledContact: 'Call the phone number below for more information.',
   },
   orderHistory: {
     backToMenu: 'Back to Menu',

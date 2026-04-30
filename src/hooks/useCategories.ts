@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface MenuCategory {
   id: string;
@@ -15,6 +16,7 @@ export interface MenuCategory {
 
 export const CATEGORIES_QUERY_KEY = ['categories'] as const;
 export const MENU_CATEGORIES_QUERY_KEY = ['menu_categories'] as const;
+const DEMO_READ_ONLY_MESSAGE = 'This is a demo account. Changes are disabled.';
 
 function slugFromName(name: string): string {
   return name
@@ -110,8 +112,10 @@ async function getNextSortOrder(): Promise<number> {
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async (payload: CreateCategoryPayload) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const name = payload.name?.trim();
       if (!name) throw new Error('Category name is required');
       const slug = slugFromName(name);
@@ -156,8 +160,10 @@ export interface UpdateCategoryPayload {
 
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string } & UpdateCategoryPayload) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       if (!id) throw new Error('Category id is required');
       const body: Record<string, unknown> = {};
       if (payload.name !== undefined) {
@@ -199,8 +205,10 @@ export function useUpdateCategory() {
 
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async (id: string) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { error } = await supabase
         .from('menu_categories')
         .delete()
@@ -249,8 +257,12 @@ export async function deleteCategoryUncategorizeRpc(
  */
 export function useDeleteCategoryAtomic() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
-    mutationFn: deleteCategoryUncategorizeRpc,
+    mutationFn: async (categoryId: string) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
+      return deleteCategoryUncategorizeRpc(categoryId);
+    },
     onSuccess: (_, categoryId) => {
       queryClient.invalidateQueries({ queryKey: CATEGORIES_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: MENU_CATEGORIES_QUERY_KEY });

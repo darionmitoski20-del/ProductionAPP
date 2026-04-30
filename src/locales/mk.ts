@@ -168,6 +168,9 @@ export default {
     timelineHintAccepted: 'Кујната ја прифати вашата нарачка!',
     timelineHintPreparing: 'Вашата нарачка се подготвува!',
     timelineHintReady: 'Вашата нарачка е готова за подигнување!',
+    canceledTitle: 'Нарачката е одбиена',
+    canceledBody: 'За жал, вашата нарачка не може да биде подготвена. Ако имате прашања, контактирајте не.',
+    canceledContact: 'Јавете се на телефонскиот број подолу за повеќе информации.',
   },
   orderHistory: {
     backToMenu: 'Назад кон менито',

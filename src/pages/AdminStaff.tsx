@@ -73,12 +73,14 @@ function StaffCard({
   onChangeRole,
   onDelete,
   canDelete,
+  isDemo,
 }: {
   user: UserProfile;
   onSetPassword: (u: UserProfile) => void;
   onChangeRole: (u: UserProfile, role: 'ADMIN' | 'STAFF') => void;
   onDelete: (u: UserProfile) => void;
   canDelete: boolean;
+  isDemo: boolean;
 }) {
   const [showActions, setShowActions] = useState(false);
   const displayName = (user.full_name || '').trim() || (user.email || '').trim() || 'Member';
@@ -86,66 +88,68 @@ function StaffCard({
 
   return (
     <div className="relative rounded-xl border border-border bg-card p-5 shadow-sm transition-shadow hover:shadow-md">
-      <div className="absolute top-3 right-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() => setShowActions(!showActions)}
-          aria-label="Actions"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-        {showActions && (
-          <div className="absolute right-0 top-full z-10 mt-1 flex flex-col gap-1 rounded-md border border-border bg-popover p-1 shadow-md">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 justify-start text-sm"
-              onClick={() => {
-                setShowActions(false);
-                onSetPassword(user);
-              }}
-            >
-              <KeyRound className="h-3.5 w-3.5 mr-2" />
-              Set password
-            </Button>
-            <div className="flex items-center gap-2 px-2 py-1">
-              <span className="text-xs text-muted-foreground">Role:</span>
-              <Select
-                value={user.role}
-                onValueChange={(v) => {
-                  onChangeRole(user, v as 'ADMIN' | 'STAFF');
+      {!isDemo && (
+        <div className="absolute top-3 right-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => setShowActions(!showActions)}
+            aria-label="Actions"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+          {showActions && (
+            <div className="absolute right-0 top-full z-10 mt-1 flex flex-col gap-1 rounded-md border border-border bg-popover p-1 shadow-md">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start text-sm"
+                onClick={() => {
                   setShowActions(false);
+                  onSetPassword(user);
                 }}
               >
-                <SelectTrigger className="h-7 w-[90px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="STAFF">STAFF</SelectItem>
-                  <SelectItem value="ADMIN">ADMIN</SelectItem>
-                </SelectContent>
-              </Select>
+                <KeyRound className="h-3.5 w-3.5 mr-2" />
+                Set password
+              </Button>
+              <div className="flex items-center gap-2 px-2 py-1">
+                <span className="text-xs text-muted-foreground">Role:</span>
+                <Select
+                  value={user.role}
+                  onValueChange={(v) => {
+                    onChangeRole(user, v as 'ADMIN' | 'STAFF');
+                    setShowActions(false);
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-[90px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="STAFF">STAFF</SelectItem>
+                    <SelectItem value="ADMIN">ADMIN</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 justify-start text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
+                disabled={!canDelete}
+                onClick={() => {
+                  setShowActions(false);
+                  onDelete(user);
+                }}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-2" />
+                Remove staff
+              </Button>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 justify-start text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
-              disabled={!canDelete}
-              onClick={() => {
-                setShowActions(false);
-                onDelete(user);
-              }}
-            >
-              <Trash2 className="h-3.5 w-3.5 mr-2" />
-              Remove staff
-            </Button>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
-      <div className="flex items-start gap-4 pr-10">
+      <div className={`flex items-start gap-4 ${isDemo ? '' : 'pr-10'}`}>
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
           {getInitials(user)}
         </div>
@@ -164,9 +168,12 @@ function StaffCard({
   );
 }
 
+const STAFF_DEMO_BLOCKED = 'Demo account: you cannot remove staff.';
+const STAFF_DEMO_NO_CREDENTIALS = 'Demo account: you cannot change roles or set passwords.';
+
 function AdminStaff() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isDemo } = useAuth();
   const [staffUsers, setStaffUsers] = useState<UserProfile[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -283,6 +290,10 @@ function AdminStaff() {
   };
 
   const handleSetPassword = async () => {
+    if (isDemo) {
+      toast.error(STAFF_DEMO_NO_CREDENTIALS);
+      return;
+    }
     if (!pwdTarget) return;
     if (!newPassword || newPassword.length < 8) {
       toast.error('Password must be at least 8 characters');
@@ -304,6 +315,10 @@ function AdminStaff() {
   };
 
   const handleChangeRole = async (targetUser: UserProfile, newRole: 'ADMIN' | 'STAFF') => {
+    if (isDemo) {
+      toast.error(STAFF_DEMO_NO_CREDENTIALS);
+      return;
+    }
     if (newRole === targetUser.role) return;
     const { error } = await supabase
       .from('user_profiles')
@@ -321,6 +336,10 @@ function AdminStaff() {
   const adminCount = staffUsers.filter((u) => u.role === 'ADMIN').length;
 
   const handleDeleteRequest = (targetUser: UserProfile) => {
+    if (isDemo) {
+      toast.error(STAFF_DEMO_BLOCKED);
+      return;
+    }
     if (targetUser.role === 'ADMIN' && adminCount <= 1) {
       toast.error('Cannot remove the last admin. Add another admin first.');
       return;
@@ -330,6 +349,12 @@ function AdminStaff() {
   };
 
   const handleDeleteConfirm = async () => {
+    if (isDemo) {
+      toast.error(STAFF_DEMO_BLOCKED);
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+      return;
+    }
     if (!deleteTarget) return;
     const target = deleteTarget;
 
@@ -363,6 +388,11 @@ function AdminStaff() {
         <p className="mt-1 text-sm text-muted-foreground">
           Manage staff accounts and roles
         </p>
+        {isDemo && (
+          <p className="mt-2 text-sm text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 px-3 py-2">
+            Demo account: you can add new staff. Changing roles, setting passwords, and removing staff are disabled.
+          </p>
+        )}
       </div>
 
       {/* Staff Members section */}
@@ -404,7 +434,8 @@ function AdminStaff() {
                 }}
                 onChangeRole={handleChangeRole}
                 onDelete={handleDeleteRequest}
-                canDelete={u.role !== 'ADMIN' || adminCount > 1}
+                canDelete={!isDemo && (u.role !== 'ADMIN' || adminCount > 1)}
+                isDemo={isDemo}
               />
             ))}
           </div>
@@ -555,7 +586,7 @@ function AdminStaff() {
             <Button variant="outline" onClick={() => setPwdDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSetPassword} disabled={pwdSubmitting}>
+            <Button onClick={handleSetPassword} disabled={pwdSubmitting || isDemo}>
               {pwdSubmitting ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
               ) : (

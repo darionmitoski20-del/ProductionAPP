@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import type { ProductCategory } from '@/types';
 
 export interface AdminProductRow {
@@ -81,6 +82,7 @@ const PRODUCT_ADDONS_QUERY_KEY = (productId: string) => ['admin', 'product-addon
 const PRODUCT_SIZES_QUERY_KEY = (productId: string) => ['admin', 'product-sizes', productId] as const;
 
 const PRODUCT_CATEGORY_VALUES: ProductCategory[] = ['pizzas', 'burgers', 'wraps', 'toasts', 'fries', 'salads', 'drinks'];
+const DEMO_READ_ONLY_MESSAGE = 'This is a demo account. Changes are disabled.';
 
 function isAuthError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -127,9 +129,11 @@ export function useAdminProducts() {
 
 export function useUpsertProduct() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async (payload: ProductUpsertPayload) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { id, category_id, name, name_mk, name_en, description, description_mk, description_en, ...rest } =
         payload;
       const enName = name.trim();
@@ -172,9 +176,11 @@ export function useUpsertProduct() {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
 
   return useMutation({
     mutationFn: async (productId: string) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { error } = await supabase
         .from('products')
         .delete()
@@ -234,8 +240,10 @@ export function useProductSizes(productId: string | null) {
 
 export function useUpsertAddon() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async (payload: AddonUpsertPayload) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { id, product_id, name, name_mk, name_en, ...rest } = payload;
       const en = name.trim();
       const body = {
@@ -271,8 +279,10 @@ export function useUpsertAddon() {
 
 export function useDeleteAddon() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async ({ addonId, productId }: { addonId: string; productId: string }) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { error } = await supabase.from('product_addons').delete().eq('id', addonId);
       if (error) throw error;
       return { productId };
@@ -286,8 +296,10 @@ export function useDeleteAddon() {
 
 export function useUpsertSize() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async (payload: SizeUpsertPayload) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { id, product_id, name, name_mk, name_en, ...rest } = payload;
       const en = name.trim();
       const body = {
@@ -323,8 +335,10 @@ export function useUpsertSize() {
 
 export function useDeleteSize() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
   return useMutation({
     mutationFn: async ({ sizeId, productId }: { sizeId: string; productId: string }) => {
+      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const { error } = await supabase.from('product_sizes').delete().eq('id', sizeId);
       if (error) throw error;
       return { productId };

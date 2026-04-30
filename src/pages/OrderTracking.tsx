@@ -5,7 +5,7 @@ import { Header } from '@/components/Header';
 import { useOrder } from '@/hooks/useOrders';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, CheckCircle2, PackageCheck, MapPin, Clock, Phone } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, PackageCheck, MapPin, Clock, Phone, XCircle } from 'lucide-react';
 import { useActiveOrderSession } from '@/hooks/useActiveOrderSession';
 import { isAuthOrMissingOrderError, isCustomerActiveOrderStatus } from '@/lib/activeOrderSession';
 import { formatPrice } from '@/lib/currency';
@@ -202,6 +202,25 @@ const OrderTracking = () => {
                 </div>
               ) : null}
             </section>
+
+            {isCanceled && (
+              <section className="rounded-xl border border-red-200 bg-red-50 p-5">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600">
+                    <XCircle className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-base font-semibold text-red-800">{t('orderTracking.canceledTitle')}</p>
+                    <p className="text-sm text-red-700/90 mt-1">
+                      {t('orderTracking.canceledBody')}
+                    </p>
+                    <p className="text-xs text-red-600/80 mt-2">
+                      {t('orderTracking.canceledContact')}
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {!isCanceled && (
               <>

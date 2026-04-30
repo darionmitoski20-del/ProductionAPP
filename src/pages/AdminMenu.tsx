@@ -99,7 +99,7 @@ const CATEGORIES: ProductCategory[] = [
 
 const AdminMenu = () => {
   const navigate = useNavigate();
-  const { user, loading, isStaff, signOut } = useAuth();
+  const { user, loading, isStaff, isDemo, signOut } = useAuth();
   const { data: products, isLoading, isError, error, refetch } = useAdminProducts();
   const { data: categories = [] } = useCategories();
   const upsertProduct = useUpsertProduct();
@@ -173,6 +173,10 @@ const AdminMenu = () => {
     setEditingProduct(null);
   };
 
+  const handleDemoBlockedAction = () => {
+    toast.error('This is a demo account. Changes are disabled.');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -243,12 +247,18 @@ const AdminMenu = () => {
             {inLayout && <p className="mt-1 text-sm text-muted-foreground">Manage menu products and categories</p>}
           </div>
           <div className="flex items-center gap-2">
-            <Button onClick={handleAddProduct}>
+            <Button onClick={isDemo ? handleDemoBlockedAction : handleAddProduct}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
           </div>
         </div>
+
+        {isDemo && (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            Demo account: changes are disabled. You can browse data, but you cannot save or delete anything.
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-4 mb-6">
           <div className="relative flex-1 min-w-[200px] max-w-sm">
@@ -335,7 +345,7 @@ const AdminMenu = () => {
                         variant="outline"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleEditProduct(p)}
+                        onClick={isDemo ? handleDemoBlockedAction : () => handleEditProduct(p)}
                         aria-label={`Edit ${p.name}`}
                       >
                         <Pencil className="h-4 w-4" />
@@ -345,6 +355,10 @@ const AdminMenu = () => {
                         size="icon"
                         className="h-8 w-8 text-destructive hover:text-destructive"
                         onClick={async () => {
+                          if (isDemo) {
+                            handleDemoBlockedAction();
+                            return;
+                          }
                           if (!confirm(`Delete "${p.name}"?`)) return;
                           try {
                             await deleteProduct.mutateAsync(p.id);
@@ -399,7 +413,7 @@ const AdminMenu = () => {
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
-                              onClick={() => handleEditProduct(p)}
+                              onClick={isDemo ? handleDemoBlockedAction : () => handleEditProduct(p)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
@@ -408,6 +422,10 @@ const AdminMenu = () => {
                               size="icon"
                               className="h-8 w-8 text-destructive hover:text-destructive"
                               onClick={async () => {
+                                if (isDemo) {
+                                  handleDemoBlockedAction();
+                                  return;
+                                }
                                 if (!confirm(`Delete "${p.name}"?`)) return;
                                 try {
                                   await deleteProduct.mutateAsync(p.id);
@@ -438,6 +456,7 @@ const AdminMenu = () => {
         editingProduct={editingProduct}
         upsertProduct={upsertProduct}
         categories={categories}
+        isDemo={isDemo}
       />
 
       <NewCategoryModal
@@ -445,6 +464,7 @@ const AdminMenu = () => {
         onClose={() => setNewCategoryOpen(false)}
         categoryFilter={categoryFilter}
         onFilterChange={setCategoryFilter}
+        isDemo={isDemo}
         onSuccess={(newId) => {
           setCategoryFilter(newId);
         }}
@@ -459,12 +479,14 @@ function NewCategoryModal({
   onSuccess,
   categoryFilter,
   onFilterChange,
+  isDemo,
 }: {
   open: boolean;
   onClose: () => void;
   onSuccess: (newCategoryId: string) => void;
   categoryFilter: string;
   onFilterChange: (value: string) => void;
+  isDemo: boolean;
 }) {
   const { data: categories = [], isLoading: categoriesLoading } = useCategories();
   const createCategory = useCreateCategory();
@@ -485,6 +507,10 @@ function NewCategoryModal({
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const handleCreate = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     if (!name.trim()) {
       toast.error('Category name is required');
       return;
@@ -522,6 +548,10 @@ function NewCategoryModal({
   };
 
   const handleUpdate = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     if (!editingId) return;
     if (!editName.trim()) {
       toast.error('Category name is required');
@@ -544,6 +574,10 @@ function NewCategoryModal({
   };
 
   const handleDeleteConfirm = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     if (!deleteTarget) return;
     try {
       await deleteCategory.mutateAsync(deleteTarget.id);
@@ -601,7 +635,7 @@ function NewCategoryModal({
                   <Switch id="cat-active" checked={active} onCheckedChange={setActive} />
                   <Label htmlFor="cat-active" className="text-xs cursor-pointer">Active</Label>
                 </div>
-                <Button size="sm" onClick={handleCreate} disabled={createCategory.isPending}>
+                <Button size="sm" onClick={handleCreate} disabled={createCategory.isPending || isDemo}>
                   {createCategory.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                   Create
                 </Button>
@@ -700,6 +734,7 @@ function NewCategoryModal({
                                   size="icon"
                                   className="h-8 w-8"
                                   onClick={() => startEdit(c)}
+                                  disabled={isDemo}
                                   title="Edit"
                                 >
                                   <Pencil className="h-4 w-4" />
@@ -709,6 +744,7 @@ function NewCategoryModal({
                                   size="icon"
                                   className="h-8 w-8 text-destructive hover:text-destructive"
                                   onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                                  disabled={isDemo}
                                   title="Delete"
                                 >
                                   <Trash2 className="h-4 w-4" />
@@ -783,6 +819,7 @@ interface ProductModalProps {
   editingProduct: AdminProductRow | null;
   upsertProduct: ReturnType<typeof useUpsertProduct>;
   categories: MenuCategory[];
+  isDemo: boolean;
 }
 
 function ProductModal({
@@ -791,6 +828,7 @@ function ProductModal({
   editingProduct,
   upsertProduct,
   categories,
+  isDemo,
 }: ProductModalProps) {
   const [name, setName] = useState('');
   const [nameMk, setNameMk] = useState('');
@@ -855,6 +893,10 @@ function ProductModal({
   }, [open, editingProduct, categories, defaultCategoryId]);
 
   const handleSaveProduct = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     const priceNum = parseFloat(price);
     if (!name.trim()) {
       toast.error('Name is required');
@@ -1094,7 +1136,7 @@ function ProductModal({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSaveProduct} disabled={upsertProduct.isPending || uploading}>
+          <Button onClick={handleSaveProduct} disabled={upsertProduct.isPending || uploading || isDemo}>
             {(upsertProduct.isPending || uploading) ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {editingProduct ? 'Update Product' : 'Save Product'}
           </Button>
@@ -1108,6 +1150,7 @@ function ProductModal({
               sizesLoading={sizesLoading}
               upsertSize={upsertSizeMutation}
               deleteSize={deleteSizeMutation}
+              isDemo={isDemo}
             />
             <AddonsSection
               productId={productIdForAddons}
@@ -1115,6 +1158,7 @@ function ProductModal({
             addonsLoading={addonsLoading}
             upsertAddon={upsertAddonMutation}
             deleteAddon={deleteAddonMutation}
+            isDemo={isDemo}
             />
           </>
         )}
@@ -1129,9 +1173,10 @@ interface SizesSectionProps {
   sizesLoading: boolean;
   upsertSize: ReturnType<typeof useUpsertSize>;
   deleteSize: ReturnType<typeof useDeleteSize>;
+  isDemo: boolean;
 }
 
-function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize }: SizesSectionProps) {
+function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize, isDemo }: SizesSectionProps) {
   const [newName, setNewName] = useState('');
   const [newNameMk, setNewNameMk] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -1140,6 +1185,10 @@ function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize }
   const [editingSizeId, setEditingSizeId] = useState<string | null>(null);
 
   const handleSaveSize = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     const priceNum = parseFloat(newPrice);
     const sortOrderNum = parseInt(newSortOrder, 10) || 0;
     if (!newName.trim()) {
@@ -1228,6 +1277,10 @@ function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize }
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={async () => {
+                        if (isDemo) {
+                          toast.error('This is a demo account. Changes are disabled.');
+                          return;
+                        }
                         if (!confirm(`Delete size "${s.name}"?`)) return;
                         try {
                           await deleteSize.mutateAsync({ sizeId: s.id, productId });
@@ -1285,7 +1338,7 @@ function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize }
             </div>
             {editingSizeId ? (
               <>
-                <Button size="sm" onClick={handleSaveSize} disabled={upsertSize.isPending}>
+                <Button size="sm" onClick={handleSaveSize} disabled={upsertSize.isPending || isDemo}>
                   Update size
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleCancelEdit}>
@@ -1293,7 +1346,7 @@ function SizesSection({ productId, sizes, sizesLoading, upsertSize, deleteSize }
                 </Button>
               </>
             ) : (
-              <Button size="sm" onClick={handleSaveSize} disabled={upsertSize.isPending}>
+              <Button size="sm" onClick={handleSaveSize} disabled={upsertSize.isPending || isDemo}>
                 Add size
               </Button>
             )}
@@ -1310,9 +1363,10 @@ interface AddonsSectionProps {
   addonsLoading: boolean;
   upsertAddon: ReturnType<typeof useUpsertAddon>;
   deleteAddon: ReturnType<typeof useDeleteAddon>;
+  isDemo: boolean;
 }
 
-function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAddon }: AddonsSectionProps) {
+function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAddon, isDemo }: AddonsSectionProps) {
   const [newName, setNewName] = useState('');
   const [newNameMk, setNewNameMk] = useState('');
   const [newPrice, setNewPrice] = useState('');
@@ -1320,6 +1374,10 @@ function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAd
   const [editingAddonId, setEditingAddonId] = useState<string | null>(null);
 
   const handleSaveAddon = async () => {
+    if (isDemo) {
+      toast.error('This is a demo account. Changes are disabled.');
+      return;
+    }
     const priceNum = parseFloat(newPrice);
     if (!newName.trim()) {
       toast.error('Add-on name is required');
@@ -1394,6 +1452,7 @@ function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAd
                       size="icon"
                       className="h-8 w-8"
                       onClick={() => handleEditAddon(a)}
+                      disabled={isDemo}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -1402,6 +1461,10 @@ function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAd
                       size="icon"
                       className="h-8 w-8 text-destructive hover:text-destructive"
                       onClick={async () => {
+                        if (isDemo) {
+                          toast.error('This is a demo account. Changes are disabled.');
+                          return;
+                        }
                         if (!confirm(`Delete add-on "${a.name}"?`)) return;
                         try {
                           await deleteAddon.mutateAsync({ addonId: a.id, productId });
@@ -1451,7 +1514,7 @@ function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAd
             </div>
             {editingAddonId ? (
               <>
-                <Button size="sm" onClick={handleSaveAddon} disabled={upsertAddon.isPending}>
+                <Button size="sm" onClick={handleSaveAddon} disabled={upsertAddon.isPending || isDemo}>
                   Update add-on
                 </Button>
                 <Button size="sm" variant="outline" onClick={handleCancelEdit}>
@@ -1459,7 +1522,7 @@ function AddonsSection({ productId, addons, addonsLoading, upsertAddon, deleteAd
                 </Button>
               </>
             ) : (
-              <Button size="sm" onClick={handleSaveAddon} disabled={upsertAddon.isPending}>
+              <Button size="sm" onClick={handleSaveAddon} disabled={upsertAddon.isPending || isDemo}>
                 Add add-on
               </Button>
             )}
