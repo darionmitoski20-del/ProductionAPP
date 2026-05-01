@@ -93,6 +93,10 @@ export default function AdminDesign() {
   }, [loading, user, isAdmin, navigate]);
 
   useEffect(() => {
+    if (!loading && user && isDemo) navigate('/admin/orders');
+  }, [loading, user, isDemo, navigate]);
+
+  useEffect(() => {
     if (settings) setForm(settings);
   }, [settings]);
 

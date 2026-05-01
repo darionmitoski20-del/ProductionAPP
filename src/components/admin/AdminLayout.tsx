@@ -47,9 +47,14 @@ export function AdminLayout() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isDemo } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
+
+  const sidebarLinks = SIDEBAR_LINKS.filter(link => {
+    if (isDemo && link.to === '/admin/design') return false;
+    return true;
+  });
 
   useEffect(() => {
     const html = document.documentElement;
@@ -105,7 +110,7 @@ export function AdminLayout() {
         </NavLink>
       </div>
       <nav className="flex-1 min-h-0 p-3 space-y-0.5 overflow-y-auto">
-        {SIDEBAR_LINKS.map(({ to, end, labelKey, icon: Icon }) => (
+        {sidebarLinks.map(({ to, end, labelKey, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
