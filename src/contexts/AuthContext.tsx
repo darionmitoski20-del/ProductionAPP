@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { isDemoUserEmail } from '@/lib/isDemoUserEmail';
 
 const LOG_PREFIX = '[AuthContext]';
 
@@ -25,26 +26,6 @@ function isAuthError(error: unknown): boolean {
   if (e.code === 'PGRST301' || e.status === 401 || e.status === 403) return true;
   if (typeof e.message === 'string' && /jwt|unauthorized|forbidden/i.test(e.message)) return true;
   return false;
-}
-
-/** Always treated as demo (read-only / restricted), regardless of VITE_DEMO_EMAILS. */
-const BUILTIN_DEMO_EMAILS = new Set(['demo@brzinaracki.com']);
-
-function isDemoAccount(email: string | null | undefined): boolean {
-  if (!email) return false;
-  const normalizedEmail = email.trim().toLowerCase();
-  if (BUILTIN_DEMO_EMAILS.has(normalizedEmail)) return true;
-
-  const configuredDemoEmails = String(import.meta.env.VITE_DEMO_EMAILS ?? '')
-    .split(',')
-    .map((item) => item.trim().toLowerCase())
-    .filter(Boolean);
-
-  if (configuredDemoEmails.length > 0) {
-    return configuredDemoEmails.includes(normalizedEmail);
-  }
-
-  return normalizedEmail.startsWith('demo@') || normalizedEmail.includes('+demo@');
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -76,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setRole(null);
           setRolesReady(true);
         } else {
-          setIsDemo(isDemoAccount(session.user.email));
+          setIsDemo(isDemoUserEmail(session.user.email));
           setRolesReady(false);
         }
       }
@@ -88,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-        setIsDemo(isDemoAccount(session?.user?.email));
+        setIsDemo(isDemoUserEmail(session?.user?.email));
         setAuthReady(true);
         if (!session?.user) setRolesReady(true);
       })
@@ -167,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setRole(null);
           }
         }
+        setIsDemo(isDemoUserEmail(user?.email));
       } catch (err) {
         if (cancelled) return;
         console.error(LOG_PREFIX, 'fetchProfile failed', err);
@@ -182,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } else {
           // Demo flag is from email, not profile. If profile fetch fails (network/RLS), keep demo
           // users able to open admin and use in-memory demo mode on production.
-          const demo = isDemoAccount(user?.email);
+          const demo = isDemoUserEmail(user?.email);
           setIsDemo(demo);
           if (demo) {
             setIsAdmin(true);

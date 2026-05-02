@@ -1,8 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useDemoModeOptional } from '@/contexts/DemoModeContext';
+import { useDemoMode } from '@/contexts/DemoModeContext';
+import { isDemoUserEmail } from '@/lib/isDemoUserEmail';
 import type { ProductCategory } from '@/types';
+
+/** Demo store + whether this session should use it (state flag OR email match — fixes prod when isDemo state lags). */
+function useDemoSession() {
+  const { isDemo, user } = useAuth();
+  const demoMode = useDemoMode();
+  const sessionIsDemo = isDemo || isDemoUserEmail(user?.email);
+  return { demoMode, sessionIsDemo };
+}
 
 export interface AdminProductRow {
   id: string;
@@ -93,8 +102,7 @@ function isAuthError(error: unknown): boolean {
 }
 
 export function useAdminProducts() {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: [...ADMIN_PRODUCTS_QUERY_KEY],
@@ -129,7 +137,7 @@ export function useAdminProducts() {
     refetchOnWindowFocus: true,
   });
 
-  const data = isDemo && demoMode && query.data
+  const data = sessionIsDemo && query.data
     ? demoMode.mergeProductsWithDemo(query.data)
     : query.data;
 
@@ -138,12 +146,11 @@ export function useAdminProducts() {
 
 export function useUpsertProduct() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (payload: ProductUpsertPayload) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         return demoMode.upsertDemoProduct({
           id: payload.id,
           name: payload.name,
@@ -201,12 +208,11 @@ export function useUpsertProduct() {
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (productId: string) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         demoMode.deleteDemoProduct(productId);
         return;
       }
@@ -224,8 +230,7 @@ export function useDeleteProduct() {
 }
 
 export function useProductAddons(productId: string | null) {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: PRODUCT_ADDONS_QUERY_KEY(productId ?? ''),
@@ -246,7 +251,7 @@ export function useProductAddons(productId: string | null) {
     enabled: !!productId,
   });
 
-  const data = isDemo && demoMode && query.data && productId
+  const data = sessionIsDemo && query.data && productId
     ? demoMode.mergeAddonsWithDemo(productId, query.data)
     : query.data;
 
@@ -254,8 +259,7 @@ export function useProductAddons(productId: string | null) {
 }
 
 export function useProductSizes(productId: string | null) {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: PRODUCT_SIZES_QUERY_KEY(productId ?? ''),
@@ -278,7 +282,7 @@ export function useProductSizes(productId: string | null) {
     enabled: !!productId,
   });
 
-  const data = isDemo && demoMode && query.data && productId
+  const data = sessionIsDemo && query.data && productId
     ? demoMode.mergeSizesWithDemo(productId, query.data)
     : query.data;
 
@@ -287,12 +291,11 @@ export function useProductSizes(productId: string | null) {
 
 export function useUpsertAddon() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (payload: AddonUpsertPayload) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         return demoMode.upsertDemoAddon({
           id: payload.id,
           product_id: payload.product_id,
@@ -338,12 +341,11 @@ export function useUpsertAddon() {
 
 export function useDeleteAddon() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async ({ addonId, productId }: { addonId: string; productId: string }) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         demoMode.deleteDemoAddon(addonId);
         return { productId };
       }
@@ -360,12 +362,11 @@ export function useDeleteAddon() {
 
 export function useUpsertSize() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (payload: SizeUpsertPayload) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         return demoMode.upsertDemoSize({
           id: payload.id,
           product_id: payload.product_id,
@@ -412,12 +413,11 @@ export function useUpsertSize() {
 
 export function useDeleteSize() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async ({ sizeId, productId }: { sizeId: string; productId: string }) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         demoMode.deleteDemoSize(sizeId);
         return { productId };
       }

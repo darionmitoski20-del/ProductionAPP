@@ -1,8 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useDemoModeOptional } from '@/contexts/DemoModeContext';
+import { useDemoMode } from '@/contexts/DemoModeContext';
+import { isDemoUserEmail } from '@/lib/isDemoUserEmail';
 import type { AppDesignSettings } from '@/types';
+
+function useDemoSession() {
+  const { isDemo, user } = useAuth();
+  const demoMode = useDemoMode();
+  const sessionIsDemo = isDemo || isDemoUserEmail(user?.email);
+  return { demoMode, sessionIsDemo };
+}
 
 const DESIGN_SETTINGS_QUERY_KEY = ['design-settings'] as const;
 
@@ -117,8 +125,7 @@ function rowToSettings(row: Record<string, unknown>): AppDesignSettings {
 
 /** Load global app design settings (single storefront). */
 export function useDesignSettings() {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: [...DESIGN_SETTINGS_QUERY_KEY],
@@ -150,7 +157,7 @@ export function useDesignSettings() {
     staleTime: 60 * 1000,
   });
 
-  const data = isDemo && demoMode && query.data
+  const data = sessionIsDemo && query.data
     ? demoMode.mergeDesignSettingsWithDemo(query.data)
     : query.data;
 
@@ -163,12 +170,11 @@ export type DesignSettingsUpdate = Partial<
 
 export function useUpdateDesignSettings() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (payload: DesignSettingsUpdate) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         return demoMode.updateDemoDesignSettings(payload);
       }
 

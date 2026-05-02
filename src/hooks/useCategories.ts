@@ -1,7 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useDemoModeOptional } from '@/contexts/DemoModeContext';
+import { useDemoMode } from '@/contexts/DemoModeContext';
+import { isDemoUserEmail } from '@/lib/isDemoUserEmail';
+
+function useDemoSession() {
+  const { isDemo, user } = useAuth();
+  const demoMode = useDemoMode();
+  const sessionIsDemo = isDemo || isDemoUserEmail(user?.email);
+  return { demoMode, sessionIsDemo };
+}
 
 export interface MenuCategory {
   id: string;
@@ -33,8 +41,7 @@ export interface MenuCategoryWithCount extends MenuCategory {
 }
 
 export function useCategoriesWithCounts() {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: [...MENU_CATEGORIES_QUERY_KEY, 'with-counts'],
@@ -71,7 +78,7 @@ export function useCategoriesWithCounts() {
     },
   });
 
-  const data = isDemo && demoMode && query.data
+  const data = sessionIsDemo && query.data
     ? demoMode.mergeCategoriesWithDemo(query.data)
     : query.data;
 
@@ -80,8 +87,7 @@ export function useCategoriesWithCounts() {
 
 /** Fetches categories. RLS: public sees active only; staff/admin see all. */
 export function useCategories() {
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   const query = useQuery({
     queryKey: [...CATEGORIES_QUERY_KEY],
@@ -101,7 +107,7 @@ export function useCategories() {
     },
   });
 
-  const data = isDemo && demoMode && query.data
+  const data = sessionIsDemo && query.data
     ? demoMode.mergeCategoriesWithDemo(query.data)
     : query.data;
 
@@ -130,15 +136,14 @@ async function getNextSortOrder(): Promise<number> {
 
 export function useCreateCategory() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (payload: CreateCategoryPayload) => {
       const name = payload.name?.trim();
       if (!name) throw new Error('Category name is required');
 
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         const sort_order = payload.sort_order ?? 0;
         return demoMode.upsertDemoCategory({
           name,
@@ -191,14 +196,13 @@ export interface UpdateCategoryPayload {
 
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string } & UpdateCategoryPayload) => {
       if (!id) throw new Error('Category id is required');
 
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         return demoMode.upsertDemoCategory({
           id,
           name: payload.name?.trim() || '',
@@ -248,12 +252,11 @@ export function useUpdateCategory() {
 
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (id: string) => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         demoMode.deleteDemoCategory(id);
         return;
       }
@@ -305,12 +308,11 @@ export async function deleteCategoryUncategorizeRpc(
  */
 export function useDeleteCategoryAtomic() {
   const queryClient = useQueryClient();
-  const { isDemo } = useAuth();
-  const demoMode = useDemoModeOptional();
+  const { demoMode, sessionIsDemo } = useDemoSession();
 
   return useMutation({
     mutationFn: async (categoryId: string): Promise<DeleteCategoryUncategorizeResult> => {
-      if (isDemo && demoMode) {
+      if (sessionIsDemo) {
         demoMode.deleteDemoCategory(categoryId);
         return { moved_count: 0, deleted: true };
       }
