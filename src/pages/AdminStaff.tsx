@@ -390,7 +390,7 @@ function AdminStaff() {
         </p>
         {isDemo && (
           <p className="mt-2 text-sm text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 px-3 py-2">
-            Demo account: you can add new staff. Changing roles, setting passwords, and removing staff are disabled.
+            Демо верзија: Додавање, менување и бришење на вработени е оневозможено.
           </p>
         )}
       </div>
@@ -400,7 +400,7 @@ function AdminStaff() {
         <div className="flex flex-col gap-4">
           <h2 className="text-lg font-semibold">Staff Members</h2>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button onClick={openAddModal} className="w-full sm:w-auto">
+            <Button onClick={openAddModal} className="w-full sm:w-auto" disabled={isDemo}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add Staff
             </Button>
@@ -416,7 +416,7 @@ function AdminStaff() {
         ) : staffUsers.length === 0 ? (
           <div className="rounded-xl border border-border bg-card p-12 text-center">
             <p className="text-muted-foreground">No staff members yet.</p>
-            <Button className="mt-4" variant="outline" onClick={openAddModal}>
+            <Button className="mt-4" variant="outline" onClick={openAddModal} disabled={isDemo}>
               <UserPlus className="h-4 w-4 mr-2" />
               Add Staff
             </Button>

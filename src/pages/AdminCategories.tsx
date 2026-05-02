@@ -34,7 +34,7 @@ import { toast } from 'sonner';
 
 export default function AdminCategories() {
   const navigate = useNavigate();
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, isDemo } = useAuth();
   const { data: categories = [], isLoading } = useCategoriesWithCounts();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
@@ -172,6 +172,12 @@ export default function AdminCategories() {
           </Button>
         </div>
       </div>
+
+      {isDemo && (
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+          Демо верзија: Можете слободно да додавате, уредувате и бришете. Сите промени се бришат при освежување на страницата.
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex items-center justify-center py-16">

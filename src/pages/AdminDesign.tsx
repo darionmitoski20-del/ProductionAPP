@@ -65,7 +65,6 @@ const DEFAULT_SETTINGS: AppDesignSettings = {
 const HERO_TITLE_MAX = 100;
 const HERO_SUBTITLE_MAX = 200;
 
-const DESIGN_DEMO_BLOCKED = 'Demo account: design changes are disabled.';
 
 export default function AdminDesign() {
   const navigate = useNavigate();
@@ -98,11 +97,6 @@ export default function AdminDesign() {
 
 
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isDemo) {
-      toast.error(DESIGN_DEMO_BLOCKED);
-      e.target.value = '';
-      return;
-    }
     const file = e.target.files?.[0];
     if (!file) return;
     const validation = validateImage(file);
@@ -133,11 +127,6 @@ export default function AdminDesign() {
   };
 
   const handleRemoveLogo = async () => {
-    if (isDemo) {
-      toast.error(DESIGN_DEMO_BLOCKED);
-      setRemoveLogoOpen(false);
-      return;
-    }
     const url = form.logo_url;
     setLogoRemoving(true);
     try {
@@ -158,11 +147,6 @@ export default function AdminDesign() {
   };
 
   const handleRemoveHeroImage = async () => {
-    if (isDemo) {
-      toast.error(DESIGN_DEMO_BLOCKED);
-      setRemoveHeroImageOpen(false);
-      return;
-    }
     const url = form.hero_image_url;
     setHeroImageRemoving(true);
     try {
@@ -190,11 +174,6 @@ export default function AdminDesign() {
   };
 
   const handleHeroImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (isDemo) {
-      toast.error(DESIGN_DEMO_BLOCKED);
-      e.target.value = '';
-      return;
-    }
     const file = e.target.files?.[0];
     if (!file) return;
     const validation = validateImage(file);
@@ -225,10 +204,6 @@ export default function AdminDesign() {
   };
 
   const handleSave = async () => {
-    if (isDemo) {
-      toast.error(DESIGN_DEMO_BLOCKED);
-      return;
-    }
     const title = form.hero_title.trim();
     const subtitle = form.hero_subtitle.trim();
     if (title.length > HERO_TITLE_MAX) {
@@ -278,7 +253,7 @@ export default function AdminDesign() {
         </p>
         {isDemo && (
           <p className="mt-2 text-sm text-amber-800 dark:text-amber-200 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 px-3 py-2">
-            Demo account: you can view design settings, but saving changes is disabled.
+            Демо верзија: Можете слободно да ги менувате поставките. Сите промени се бришат при освежување на страницата.
           </p>
         )}
       </div>
@@ -303,7 +278,6 @@ export default function AdminDesign() {
                 onChange={(e) => setForm((p) => ({ ...p, app_name: e.target.value }))}
                 placeholder="FastOrdersapplication"
                 maxLength={50}
-                disabled={isDemo}
               />
               <p className="text-xs text-muted-foreground">
                 This name is shown next to the logo in the header.
@@ -367,7 +341,6 @@ export default function AdminDesign() {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, social_facebook_url: e.target.value || null }))
                   }
-                  disabled={isDemo}
                 />
               </div>
               <div className="space-y-2">
@@ -381,7 +354,6 @@ export default function AdminDesign() {
                   onChange={(e) =>
                     setForm((p) => ({ ...p, social_instagram_url: e.target.value || null }))
                   }
-                  disabled={isDemo}
                 />
               </div>
             </div>
@@ -462,13 +434,11 @@ export default function AdminDesign() {
                       value={form.hero_gradient_from}
                       onChange={(e) => setForm((p) => ({ ...p, hero_gradient_from: e.target.value }))}
                       className="h-9 w-14 rounded border border-border cursor-pointer"
-                      disabled={isDemo}
                     />
                     <Input
                       value={form.hero_gradient_from}
                       onChange={(e) => setForm((p) => ({ ...p, hero_gradient_from: e.target.value }))}
                       className="w-24 font-mono text-base"
-                      disabled={isDemo}
                     />
                   </div>
                   <div className="flex items-center gap-2">
@@ -478,13 +448,11 @@ export default function AdminDesign() {
                       value={form.hero_gradient_to}
                       onChange={(e) => setForm((p) => ({ ...p, hero_gradient_to: e.target.value }))}
                       className="h-9 w-14 rounded border border-border cursor-pointer"
-                      disabled={isDemo}
                     />
                     <Input
                       value={form.hero_gradient_to}
                       onChange={(e) => setForm((p) => ({ ...p, hero_gradient_to: e.target.value }))}
                       className="w-24 font-mono text-base"
-                      disabled={isDemo}
                     />
                   </div>
                 </div>
@@ -500,7 +468,6 @@ export default function AdminDesign() {
                     placeholder="РЕСТОРАН МЕНИ"
                     maxLength={HERO_TITLE_MAX}
                     className="mt-1"
-                    disabled={isDemo}
                   />
                   <p className="text-xs text-muted-foreground mt-1">{form.hero_title.length}/{HERO_TITLE_MAX}</p>
                 </div>
@@ -514,7 +481,6 @@ export default function AdminDesign() {
                     maxLength={HERO_SUBTITLE_MAX}
                     rows={2}
                     className="mt-1 flex min-h-[60px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isDemo}
                   />
                   <p className="text-xs text-muted-foreground mt-1">{form.hero_subtitle.length}/{HERO_SUBTITLE_MAX}</p>
                 </div>
@@ -533,13 +499,11 @@ export default function AdminDesign() {
                   value={form.primary_color}
                   onChange={(e) => setForm((p) => ({ ...p, primary_color: e.target.value }))}
                   className="h-9 w-14 rounded border border-border cursor-pointer"
-                  disabled={isDemo}
                 />
                 <Input
                   value={form.primary_color}
                   onChange={(e) => setForm((p) => ({ ...p, primary_color: e.target.value }))}
                   className="w-24 font-mono text-base"
-                  disabled={isDemo}
                 />
               </div>
               <div className="flex items-center gap-2">
@@ -549,13 +513,11 @@ export default function AdminDesign() {
                   value={form.secondary_color}
                   onChange={(e) => setForm((p) => ({ ...p, secondary_color: e.target.value }))}
                   className="h-9 w-14 rounded border border-border cursor-pointer"
-                  disabled={isDemo}
                 />
                 <Input
                   value={form.secondary_color}
                   onChange={(e) => setForm((p) => ({ ...p, secondary_color: e.target.value }))}
                   className="w-24 font-mono text-base"
-                  disabled={isDemo}
                 />
               </div>
             </div>
@@ -578,7 +540,6 @@ export default function AdminDesign() {
                   else if (e.target.value === '') setForm((p) => ({ ...p, max_product_quantity: 5 }));
                 }}
                 className="w-20"
-                disabled={isDemo}
               />
               <p className="text-xs text-muted-foreground">
                 Maximum number of the same product a customer can add per item (1–99). Shown in the product modal and cart.
@@ -595,7 +556,6 @@ export default function AdminDesign() {
                 <Select
                   value={form.font_family}
                   onValueChange={(v) => setForm((p) => ({ ...p, font_family: v }))}
-                  disabled={isDemo}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -614,7 +574,6 @@ export default function AdminDesign() {
                 <Select
                   value={form.button_radius}
                   onValueChange={(v) => setForm((p) => ({ ...p, button_radius: v as ButtonRadiusOption }))}
-                  disabled={isDemo}
                 >
                   <SelectTrigger className="mt-1">
                     <SelectValue />
@@ -652,7 +611,6 @@ export default function AdminDesign() {
                   }
                   placeholder="ASAP Pickup"
                   className="max-w-md"
-                  disabled={isDemo}
                 />
               </div>
               <div className="space-y-1.5">
@@ -665,7 +623,6 @@ export default function AdminDesign() {
                   }
                   placeholder="My Restaurant"
                   className="max-w-md"
-                  disabled={isDemo}
                 />
               </div>
               <div className="space-y-1.5">
@@ -678,7 +635,6 @@ export default function AdminDesign() {
                   }
                   placeholder="142 Market Street, Floor 1"
                   className="max-w-md"
-                  disabled={isDemo}
                 />
               </div>
               <div className="space-y-1.5">
@@ -691,13 +647,12 @@ export default function AdminDesign() {
                   }
                   placeholder="+389 70 000 000"
                   className="max-w-md"
-                  disabled={isDemo}
                 />
               </div>
             </div>
           </div>
 
-          <Button onClick={handleSave} disabled={updateSettings.isPending || isDemo}>
+          <Button onClick={handleSave} disabled={updateSettings.isPending}>
             {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
             Save settings
           </Button>

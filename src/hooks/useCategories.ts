@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoModeOptional } from '@/contexts/DemoModeContext';
 
 export interface MenuCategory {
   id: string;
@@ -16,7 +17,6 @@ export interface MenuCategory {
 
 export const CATEGORIES_QUERY_KEY = ['categories'] as const;
 export const MENU_CATEGORIES_QUERY_KEY = ['menu_categories'] as const;
-const DEMO_READ_ONLY_MESSAGE = 'This is a demo account. Changes are disabled.';
 
 function slugFromName(name: string): string {
   return name
@@ -33,7 +33,10 @@ export interface MenuCategoryWithCount extends MenuCategory {
 }
 
 export function useCategoriesWithCounts() {
-  return useQuery({
+  const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
+  const query = useQuery({
     queryKey: [...MENU_CATEGORIES_QUERY_KEY, 'with-counts'],
     enabled: true,
     queryFn: async (): Promise<MenuCategoryWithCount[]> => {
@@ -67,11 +70,20 @@ export function useCategoriesWithCounts() {
       })) as MenuCategoryWithCount[];
     },
   });
+
+  const data = isDemo && demoMode && query.data
+    ? demoMode.mergeCategoriesWithDemo(query.data)
+    : query.data;
+
+  return { ...query, data };
 }
 
 /** Fetches categories. RLS: public sees active only; staff/admin see all. */
 export function useCategories() {
-  return useQuery({
+  const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
+  const query = useQuery({
     queryKey: [...CATEGORIES_QUERY_KEY],
     enabled: true,
     queryFn: async (): Promise<MenuCategory[]> => {
@@ -88,6 +100,12 @@ export function useCategories() {
       })) as MenuCategory[];
     },
   });
+
+  const data = isDemo && demoMode && query.data
+    ? demoMode.mergeCategoriesWithDemo(query.data)
+    : query.data;
+
+  return { ...query, data };
 }
 
 export interface CreateCategoryPayload {
@@ -113,11 +131,24 @@ async function getNextSortOrder(): Promise<number> {
 export function useCreateCategory() {
   const queryClient = useQueryClient();
   const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
   return useMutation({
     mutationFn: async (payload: CreateCategoryPayload) => {
-      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       const name = payload.name?.trim();
       if (!name) throw new Error('Category name is required');
+
+      if (isDemo && demoMode) {
+        const sort_order = payload.sort_order ?? 0;
+        return demoMode.upsertDemoCategory({
+          name,
+          name_mk: payload.name_mk?.trim() || null,
+          name_en: name,
+          sort_order,
+          is_active: payload.is_active ?? true,
+        });
+      }
+
       const slug = slugFromName(name);
       const sort_order = payload.sort_order ?? (await getNextSortOrder());
       const name_mk = payload.name_mk?.trim() || null;
@@ -161,10 +192,22 @@ export interface UpdateCategoryPayload {
 export function useUpdateCategory() {
   const queryClient = useQueryClient();
   const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
   return useMutation({
     mutationFn: async ({ id, ...payload }: { id: string } & UpdateCategoryPayload) => {
-      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
       if (!id) throw new Error('Category id is required');
+
+      if (isDemo && demoMode) {
+        return demoMode.upsertDemoCategory({
+          id,
+          name: payload.name?.trim() || '',
+          name_mk: payload.name_mk?.trim() || null,
+          sort_order: payload.sort_order,
+          is_active: payload.is_active,
+        });
+      }
+
       const body: Record<string, unknown> = {};
       if (payload.name !== undefined) {
         const name = payload.name.trim();
@@ -206,9 +249,14 @@ export function useUpdateCategory() {
 export function useDeleteCategory() {
   const queryClient = useQueryClient();
   const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
   return useMutation({
     mutationFn: async (id: string) => {
-      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
+      if (isDemo && demoMode) {
+        demoMode.deleteDemoCategory(id);
+        return;
+      }
       const { error } = await supabase
         .from('menu_categories')
         .delete()
@@ -258,9 +306,14 @@ export async function deleteCategoryUncategorizeRpc(
 export function useDeleteCategoryAtomic() {
   const queryClient = useQueryClient();
   const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
   return useMutation({
-    mutationFn: async (categoryId: string) => {
-      if (isDemo) throw new Error(DEMO_READ_ONLY_MESSAGE);
+    mutationFn: async (categoryId: string): Promise<DeleteCategoryUncategorizeResult> => {
+      if (isDemo && demoMode) {
+        demoMode.deleteDemoCategory(categoryId);
+        return { moved_count: 0, deleted: true };
+      }
       return deleteCategoryUncategorizeRpc(categoryId);
     },
     onSuccess: (_, categoryId) => {

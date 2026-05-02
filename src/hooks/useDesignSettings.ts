@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useDemoModeOptional } from '@/contexts/DemoModeContext';
 import type { AppDesignSettings } from '@/types';
 
 const DESIGN_SETTINGS_QUERY_KEY = ['design-settings'] as const;
@@ -115,7 +117,10 @@ function rowToSettings(row: Record<string, unknown>): AppDesignSettings {
 
 /** Load global app design settings (single storefront). */
 export function useDesignSettings() {
-  return useQuery({
+  const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
+
+  const query = useQuery({
     queryKey: [...DESIGN_SETTINGS_QUERY_KEY],
     enabled: true,
     queryFn: async (): Promise<AppDesignSettings | null> => {
@@ -144,6 +149,12 @@ export function useDesignSettings() {
     },
     staleTime: 60 * 1000,
   });
+
+  const data = isDemo && demoMode && query.data
+    ? demoMode.mergeDesignSettingsWithDemo(query.data)
+    : query.data;
+
+  return { ...query, data };
 }
 
 export type DesignSettingsUpdate = Partial<
@@ -152,9 +163,15 @@ export type DesignSettingsUpdate = Partial<
 
 export function useUpdateDesignSettings() {
   const queryClient = useQueryClient();
+  const { isDemo } = useAuth();
+  const demoMode = useDemoModeOptional();
 
   return useMutation({
     mutationFn: async (payload: DesignSettingsUpdate) => {
+      if (isDemo && demoMode) {
+        return demoMode.updateDemoDesignSettings(payload);
+      }
+
       const pickupName =
         payload.pickup_location_name != null ? String(payload.pickup_location_name).trim() : '';
       const pickupAddress =
