@@ -179,11 +179,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsStaff(false);
           setIsDemo(false);
           setRole(null);
+        } else {
+          // Demo flag is from email, not profile. If profile fetch fails (network/RLS), keep demo
+          // users able to open admin and use in-memory demo mode on production.
+          const demo = isDemoAccount(user?.email);
+          setIsDemo(demo);
+          if (demo) {
+            setIsAdmin(true);
+            setIsStaff(true);
+            setRole('admin');
+          } else {
+            setIsAdmin(false);
+            setIsStaff(false);
+            setRole(null);
+          }
         }
-        setIsAdmin(false);
-        setIsStaff(false);
-        setIsDemo(false);
-        setRole(null);
       } finally {
         profileFetchInFlight.current = false;
         if (!cancelled) {
